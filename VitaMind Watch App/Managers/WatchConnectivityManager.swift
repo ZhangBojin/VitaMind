@@ -11,6 +11,9 @@ final class WatchConnectivityManager: NSObject {
     private(set) var isReachable = false
     private(set) var isActivated = false
 
+    /// Callback when iPhone requests a stress measurement.
+    var onStartMeasurement: (() -> Void)?
+
     /// Samples that failed to send (phone unreachable). Retried when reachable again.
     private var pendingSamples: [HealthSample] = []
     private let maxPending = 100
@@ -59,12 +62,12 @@ final class WatchConnectivityManager: NSObject {
     }
 
     /// Send a stress result to the iPhone.
-    func sendStressResult(score: Int, rmssd: Double, level: String, timestamp: Date) {
+    func sendStressResult(score: Int, sdnn: Double, level: String, timestamp: Date) {
         guard WCSession.isSupported() else { return }
         let message: [String: Any] = [
             "type": "stressResult",
             "score": score,
-            "rmssd": rmssd,
+            "sdnn": sdnn,
             "level": level,
             "timestamp": timestamp.timeIntervalSince1970
         ]
@@ -93,6 +96,15 @@ final class WatchConnectivityManager: NSObject {
             session.sendMessage(message, replyHandler: nil, errorHandler: nil)
         } else {
             session.transferUserInfo(message)
+        }
+    }
+
+    // MARK: - Receive (from iPhone)
+
+    fileprivate func handleIncoming(_ message: [String: Any]) {
+        let type = message["type"] as? String ?? ""
+        if type == "startMeasurement" {
+            onStartMeasurement?()
         }
     }
 
@@ -174,6 +186,12 @@ private final class SessionDelegate: NSObject, WCSessionDelegate {
     func sessionReachabilityDidChange(_ session: WCSession) {
         Task { @MainActor [weak self] in
             self?.owner?.handleReachabilityChange(session.isReachable)
+        }
+    }
+
+    func session(_ session: WCSession, didReceiveMessage message: [String: Any]) {
+        Task { @MainActor [weak self] in
+            self?.owner?.handleIncoming(message)
         }
     }
 

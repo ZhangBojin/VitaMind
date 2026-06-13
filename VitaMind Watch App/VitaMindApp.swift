@@ -32,11 +32,18 @@ struct VitaMind_Watch_AppApp: App {
                     stressMonitor.onStressResult = { result in
                         connectivityManager.sendStressResult(
                             score: result.score,
-                            rmssd: result.rmssd,
+                            sdnn: result.sdnn,
                             level: result.level.rawValue,
                             timestamp: result.timestamp
                         )
                         reportStatus()
+                    }
+
+                    // Handle measurement request from iPhone.
+                    connectivityManager.onStartMeasurement = {
+                        Task {
+                            await stressMonitor.forceMeasurement()
+                        }
                     }
 
                     // Authorize and start.

@@ -26,7 +26,7 @@ struct VitaMindApp: App {
                     watchConnectivityManager.onStressResultReceived = { result in
                         healthKitManager.ingestStressResult(
                             score: result.score,
-                            rmssd: result.rmssd,
+                            sdnn: result.sdnn,
                             level: result.level,
                             timestamp: result.timestamp
                         )

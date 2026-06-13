@@ -17,7 +17,7 @@ final class HealthKitManager {
     // MARK: - Stress (computed on watch, received via WatchConnectivity)
 
     private(set) var latestStressScore: Int?
-    private(set) var latestRMSSD: Double?
+    private(set) var latestSDNN: Double?
     private(set) var stressLevel: String = "unknown"
     private(set) var lastStressUpdated: Date?
 
@@ -90,9 +90,9 @@ final class HealthKitManager {
     }
 
     /// Ingest a stress result received from the watch.
-    func ingestStressResult(score: Int, rmssd: Double, level: String, timestamp: Date) {
+    func ingestStressResult(score: Int, sdnn: Double, level: String, timestamp: Date) {
         latestStressScore = score
-        latestRMSSD = rmssd
+        latestSDNN = sdnn
         stressLevel = level
         lastStressUpdated = timestamp
     }

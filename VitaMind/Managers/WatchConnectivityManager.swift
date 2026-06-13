@@ -20,10 +20,22 @@ final class WatchConnectivityManager: NSObject {
     /// Callback invoked when watch diagnostic status arrives.
     var onWatchStatusReceived: ((WatchDiagnostics) -> Void)?
 
+    /// Send a measurement request to the watch.
+    func requestMeasurement() {
+        guard WCSession.isSupported(), WCSession.default.isReachable else { return }
+        WCSession.default.sendMessage(
+            ["type": "startMeasurement"],
+            replyHandler: nil,
+            errorHandler: { error in
+                print("[iPhone WCS] requestMeasurement failed: \(error.localizedDescription)")
+            }
+        )
+    }
+
     /// Stress result received from the watch.
     struct StressResult {
         let score: Int
-        let rmssd: Double
+        let sdnn: Double
         let level: String
         let timestamp: Date
     }
@@ -60,7 +72,7 @@ final class WatchConnectivityManager: NSObject {
         let typeRaw = message["type"] as? String ?? "heartRate"
         if typeRaw == "stressResult" {
             guard let score = message["score"] as? Int,
-                  let rmssd = message["rmssd"] as? Double,
+                  let sdnn = message["sdnn"] as? Double,
                   let level = message["level"] as? String else {
                 print("[iPhone WCS] Invalid stressResult message")
                 return
@@ -71,7 +83,7 @@ final class WatchConnectivityManager: NSObject {
             } else {
                 timestamp = Date()
             }
-            onStressResultReceived?(StressResult(score: score, rmssd: rmssd, level: level, timestamp: timestamp))
+            onStressResultReceived?(StressResult(score: score, sdnn: sdnn, level: level, timestamp: timestamp))
             return
         }
         // Watch diagnostic status

@@ -4,31 +4,36 @@ struct DashboardOverviewView: View {
     @Environment(HealthKitManager.self) private var healthKitManager
     @Environment(WatchConnectivityManager.self) private var watchConnectivity
     let viewModel: DashboardViewModel
+    @State private var isMeasuring = false
 
     var body: some View {
-        if !healthKitManager.isAuthorized {
-            HealthAuthorizationView()
-        } else if let error = viewModel.error {
-            EmptyStateView(
-                title: "出错了",
-                systemImage: "exclamationmark.triangle",
-                description: error
-            )
-        } else {
-            ScrollView {
-                VStack(spacing: 20) {
-                    stressCard
-                    watchStatusRow
-                    activitySummaryRow
-                    vitalsSummaryRow
-                    sleepSummaryCard
-                    standProgressCard
+        Group {
+            if !healthKitManager.isAuthorized {
+                HealthAuthorizationView()
+            } else if let error = viewModel.error {
+                EmptyStateView(
+                    title: "出错了",
+                    systemImage: "exclamationmark.triangle",
+                    description: error
+                )
+            } else {
+                ScrollView {
+                    VStack(spacing: 20) {
+                        stressCard
+                        activitySummaryRow
+                        vitalsSummaryRow
+                        sleepSummaryCard
+                        standProgressCard
+                    }
+                    .padding()
                 }
-                .padding()
+                .refreshable {
+                    await viewModel.refresh()
+                }
             }
-            .refreshable {
-                await viewModel.refresh()
-            }
+        }
+        .onChange(of: viewModel.lastStressUpdated) { _, _ in
+            isMeasuring = false
         }
     }
 
@@ -56,17 +61,53 @@ struct DashboardOverviewView: View {
                     .font(.title3.bold())
                     .foregroundStyle(color)
 
-                // RMSSD detail
-                if let rmssd = viewModel.latestRMSSD {
-                    Text("RMSSD: \(Int(rmssd)) ms")
+                // SDNN detail
+                if let sdnn = viewModel.latestSDNN {
+                    Text("SDNN: \(Int(sdnn)) ms")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
 
                 if let updated = viewModel.lastStressUpdated {
-                    Text("更新于 \(updated, style: .time)")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
+                    let hoursAgo = Int(Date().timeIntervalSince(updated) / 3600)
+                    HStack(spacing: 4) {
+                        if Calendar.current.isDateInToday(updated) {
+                            Text("测量于 \(updated, style: .time)")
+                        } else {
+                            Text("测量于 \(updated, style: .date) \(updated, style: .time)")
+                        }
+                    }
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+
+                    if hoursAgo > 4 {
+                        Text("(\(hoursAgo)小时前)")
+                            .font(.caption2)
+                            .foregroundStyle(.orange)
+
+                        if watchConnectivity.isReachable {
+                            if isMeasuring {
+                                Label("正在测量…", systemImage: "applewatch.radiowaves.left.and.right")
+                                    .font(.caption)
+                                    .foregroundStyle(.orange)
+                            } else {
+                                Button {
+                                    isMeasuring = true
+                                    watchConnectivity.requestMeasurement()
+                                    // Auto-reset if no response after 90s
+                                    Task { @MainActor in
+                                        try? await Task.sleep(for: .seconds(90))
+                                        isMeasuring = false
+                                    }
+                                } label: {
+                                    Label("立即测量", systemImage: "arrow.triangle.2.circlepath")
+                                        .font(.caption)
+                                }
+                                .buttonStyle(.bordered)
+                                .tint(.orange)
+                            }
+                        }
+                    }
                 }
             } else {
                 Text("--")
@@ -123,51 +164,6 @@ struct DashboardOverviewView: View {
         case 51...75: return .orange
         default:      return .red
         }
-    }
-
-    // MARK: - 手表状态
-
-    @ViewBuilder
-    private var watchStatusRow: some View {
-        let hkOK = viewModel.watchHKAuthorized == true
-        let monitoring = viewModel.watchMonitoring == true
-
-        HStack(spacing: 8) {
-            // HealthKit 状态
-            HStack(spacing: 4) {
-                Image(systemName: hkOK ? "checkmark.circle.fill" : "xmark.circle.fill")
-                    .font(.caption)
-                    .foregroundStyle(hkOK ? .green : .red)
-                Text(hkOK ? "已授权" : "未授权")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-            }
-
-            Text("·")
-                .foregroundStyle(.tertiary)
-
-            // 监测状态
-            HStack(spacing: 4) {
-                Image(systemName: monitoring ? "record.circle.fill" : "stop.circle.fill")
-                    .font(.caption)
-                    .foregroundStyle(monitoring ? .green : .orange)
-                Text(monitoring ? "监测中" : "已暂停")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-            }
-
-            Spacer()
-
-            // 最后通讯时间
-            if let lastReport = viewModel.watchLastReport {
-                Text("手表 \(lastReport, style: .relative)前在线")
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
-            }
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
     }
 
     // MARK: - 活动概览

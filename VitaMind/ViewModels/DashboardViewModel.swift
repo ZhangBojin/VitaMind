@@ -6,7 +6,7 @@ import Observation
 final class DashboardViewModel {
     // Stress
     private(set) var stressScore: Int?
-    private(set) var latestRMSSD: Double?
+    private(set) var latestSDNN: Double?
     private(set) var stressLevelText: String = "暂无数据"
     private(set) var lastStressUpdated: Date?
 
@@ -50,7 +50,7 @@ final class DashboardViewModel {
 
         // Stress
         stressScore = healthKitManager.latestStressScore
-        latestRMSSD = healthKitManager.latestRMSSD
+        latestSDNN = healthKitManager.latestSDNN
         stressLevelText = stressLevelDisplayName(healthKitManager.stressLevel)
         lastStressUpdated = healthKitManager.lastStressUpdated
 
