@@ -108,7 +108,8 @@ final class HealthKitManager {
         )
 
         do {
-            let samples = try await fetchSamplesInternal(type: type, predicate: predicate)
+            var samples = try await fetchSamplesInternal(type: type, predicate: predicate)
+            samples.sort { $0.date > $1.date }
             allSamples[type] = samples
             if let first = samples.first {
                 latestValues[type] = first.value
@@ -146,13 +147,22 @@ final class HealthKitManager {
                 }
             }
 
+            // Collect all results first, then assign at once to avoid multiple onChange triggers
+            var newSamples: [HealthMetricType: [HealthSample]] = [:]
+            var newLatest: [HealthMetricType: Double] = [:]
+
             for await result in group {
-                guard let (type, samples) = result else { continue }
-                allSamples[type] = samples
+                guard let (type, rawSamples) = result else { continue }
+                var samples = rawSamples
+                samples.sort { $0.date > $1.date }
+                newSamples[type] = samples
                 if let first = samples.first {
-                    latestValues[type] = first.value
+                    newLatest[type] = first.value
                 }
             }
+
+            allSamples = newSamples
+            latestValues = newLatest
         }
 
         error = nil
