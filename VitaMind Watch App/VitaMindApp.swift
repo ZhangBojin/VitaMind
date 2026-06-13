@@ -13,6 +13,7 @@ struct VitaMind_Watch_AppApp: App {
     @State private var healthKitManager = WatchHealthKitManager()
     @State private var connectivityManager = WatchConnectivityManager()
     @State private var stressMonitor = StressMonitor()
+    @State private var didSetup = false
 
     var body: some Scene {
         WindowGroup {
@@ -20,12 +21,14 @@ struct VitaMind_Watch_AppApp: App {
                 .environment(healthKitManager)
                 .environment(connectivityManager)
                 .task {
-                    // Forward new health samples from HealthKit to the phone.
+                    guard !didSetup else { return }
+                    didSetup = true
+
+                    // Wire callbacks.
                     healthKitManager.onNewSample = { sample in
                         connectivityManager.sendSample(sample)
                     }
 
-                    // Forward stress results to the phone.
                     stressMonitor.onStressResult = { result in
                         connectivityManager.sendStressResult(
                             score: result.score,
@@ -33,24 +36,55 @@ struct VitaMind_Watch_AppApp: App {
                             level: result.level.rawValue,
                             timestamp: result.timestamp
                         )
+                        reportStatus()
                     }
 
-                    // Request authorization, then start health + stress monitoring.
+                    // Authorize and start.
                     await healthKitManager.requestAuthorization()
-                    healthKitManager.startObservingAll()
-                    stressMonitor.start()
+                    if healthKitManager.isAuthorized {
+                        healthKitManager.startObservingAll()
+                        stressMonitor.start()
+                    } else {
+                        reportStatus()
+                        scheduleStatusRetries()
+                        return
+                    }
+
+                    // WCSession may not be ready yet — retry status reports.
+                    reportStatus()
+                    scheduleStatusRetries()
                 }
         }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .background {
-                // Stop regular HealthKit observers, but keep the stress monitor
-                // running — HKWorkoutSession continues in background on watchOS.
                 healthKitManager.stopObserving()
             } else if newPhase == .active {
                 healthKitManager.startObservingAll()
-                // stressMonitor.start() is safe to call multiple times —
-                // it skips if already running.
-                stressMonitor.start()
+                if healthKitManager.isAuthorized {
+                    stressMonitor.start()
+                }
+                reportStatus()
+                scheduleStatusRetries()
+            }
+        }
+    }
+
+    // MARK: - Status reporting
+
+    private func reportStatus() {
+        connectivityManager.sendWatchStatus(
+            hkAuthorized: healthKitManager.isAuthorized,
+            monitoring: stressMonitor.isSampling,
+            errorText: healthKitManager.error ?? stressMonitor.error
+        )
+    }
+
+    /// Re-report status at increasing intervals to handle WCSession not yet activated.
+    private func scheduleStatusRetries() {
+        for delay in [1.0, 3.0, 10.0, 30.0] {
+            Task { @MainActor in
+                try? await Task.sleep(for: .seconds(delay))
+                reportStatus()
             }
         }
     }

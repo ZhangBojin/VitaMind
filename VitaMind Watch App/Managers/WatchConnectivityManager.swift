@@ -76,6 +76,26 @@ final class WatchConnectivityManager: NSObject {
         }
     }
 
+    /// Send diagnostic status to the iPhone.
+    func sendWatchStatus(hkAuthorized: Bool, monitoring: Bool, errorText: String? = nil) {
+        guard WCSession.isSupported() else { return }
+        var message: [String: Any] = [
+            "type": "watchStatus",
+            "hkAuthorized": hkAuthorized,
+            "stressMonitoring": monitoring,
+            "timestamp": Date().timeIntervalSince1970
+        ]
+        if let errorText {
+            message["errorText"] = errorText
+        }
+        let session = WCSession.default
+        if session.isReachable {
+            session.sendMessage(message, replyHandler: nil, errorHandler: nil)
+        } else {
+            session.transferUserInfo(message)
+        }
+    }
+
     // MARK: - Internal (called by SessionDelegate)
 
     fileprivate func handleActivation(state: WCSessionActivationState, reachable: Bool, error: Error?) {

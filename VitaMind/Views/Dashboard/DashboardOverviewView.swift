@@ -18,6 +18,7 @@ struct DashboardOverviewView: View {
             ScrollView {
                 VStack(spacing: 20) {
                     stressCard
+                    watchStatusRow
                     activitySummaryRow
                     vitalsSummaryRow
                     sleepSummaryCard
@@ -72,25 +73,38 @@ struct DashboardOverviewView: View {
                     .font(.system(size: 72, weight: .thin, design: .rounded))
                     .foregroundStyle(.tertiary)
 
-                if !watchConnectivity.isWatchAppInstalled {
-                    Text("手表 App 未安装")
+                if !watchConnectivity.isReachable {
+                    Text("手表未连接")
                         .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Text("请在 iPhone 的 Watch App 中安装 VitaMind")
+                        .foregroundStyle(.red)
+                    Text("请确保 Apple Watch 已佩戴并在附近")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
-                } else if !watchConnectivity.isActivated {
-                    Text("请打开手表 App")
+                } else if viewModel.watchHKAuthorized == false {
+                    Text("手表 HealthKit 未授权")
                         .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Text("打开一次手表上的 VitaMind 以开始监测")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                } else {
+                        .foregroundStyle(.orange)
+                    if let watchErr = viewModel.watchErrorText {
+                        Text(watchErr)
+                            .font(.caption2)
+                            .foregroundStyle(.red)
+                    } else {
+                        Text("请打开手表上的 VitaMind App，点击允许授权")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                } else if viewModel.watchMonitoring == true {
                     Text("正在采集…")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     Text("首次压力评估约需 30 秒")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text("等待手表上报…")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text("请打开手表上的 VitaMind App")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
@@ -109,6 +123,51 @@ struct DashboardOverviewView: View {
         case 51...75: return .orange
         default:      return .red
         }
+    }
+
+    // MARK: - 手表状态
+
+    @ViewBuilder
+    private var watchStatusRow: some View {
+        let hkOK = viewModel.watchHKAuthorized == true
+        let monitoring = viewModel.watchMonitoring == true
+
+        HStack(spacing: 8) {
+            // HealthKit 状态
+            HStack(spacing: 4) {
+                Image(systemName: hkOK ? "checkmark.circle.fill" : "xmark.circle.fill")
+                    .font(.caption)
+                    .foregroundStyle(hkOK ? .green : .red)
+                Text(hkOK ? "已授权" : "未授权")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+
+            Text("·")
+                .foregroundStyle(.tertiary)
+
+            // 监测状态
+            HStack(spacing: 4) {
+                Image(systemName: monitoring ? "record.circle.fill" : "stop.circle.fill")
+                    .font(.caption)
+                    .foregroundStyle(monitoring ? .green : .orange)
+                Text(monitoring ? "监测中" : "已暂停")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            // 最后通讯时间
+            if let lastReport = viewModel.watchLastReport {
+                Text("手表 \(lastReport, style: .relative)前在线")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
     }
 
     // MARK: - 活动概览

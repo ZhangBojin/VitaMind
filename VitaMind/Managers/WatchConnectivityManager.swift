@@ -17,12 +17,22 @@ final class WatchConnectivityManager: NSObject {
     var onSampleReceived: ((HealthSample) -> Void)?
     /// Callback invoked when a stress result arrives from the watch.
     var onStressResultReceived: ((StressResult) -> Void)?
+    /// Callback invoked when watch diagnostic status arrives.
+    var onWatchStatusReceived: ((WatchDiagnostics) -> Void)?
 
     /// Stress result received from the watch.
     struct StressResult {
         let score: Int
         let rmssd: Double
         let level: String
+        let timestamp: Date
+    }
+
+    /// Diagnostic status from the watch.
+    struct WatchDiagnostics {
+        let healthKitAuthorized: Bool
+        let stressMonitoring: Bool
+        let errorText: String?
         let timestamp: Date
     }
 
@@ -62,6 +72,25 @@ final class WatchConnectivityManager: NSObject {
                 timestamp = Date()
             }
             onStressResultReceived?(StressResult(score: score, rmssd: rmssd, level: level, timestamp: timestamp))
+            return
+        }
+        // Watch diagnostic status
+        if typeRaw == "watchStatus" {
+            let hkAuth = message["hkAuthorized"] as? Bool ?? false
+            let monitoring = message["stressMonitoring"] as? Bool ?? false
+            let errorText = message["errorText"] as? String
+            let timestamp: Date
+            if let ts = message["timestamp"] as? TimeInterval {
+                timestamp = Date(timeIntervalSince1970: ts)
+            } else {
+                timestamp = Date()
+            }
+            onWatchStatusReceived?(WatchDiagnostics(
+                healthKitAuthorized: hkAuth,
+                stressMonitoring: monitoring,
+                errorText: errorText,
+                timestamp: timestamp
+            ))
             return
         }
         guard let metricType = HealthMetricType(rawValue: typeRaw) else {

@@ -31,6 +31,15 @@ struct VitaMindApp: App {
                             timestamp: result.timestamp
                         )
                     }
+                    // Wire watch diagnostic status.
+                    watchConnectivityManager.onWatchStatusReceived = { status in
+                        healthKitManager.updateWatchStatus(
+                            hkAuthorized: status.healthKitAuthorized,
+                            monitoring: status.stressMonitoring,
+                            errorText: status.errorText,
+                            timestamp: status.timestamp
+                        )
+                    }
 
                     // Request HealthKit access and begin observing all types.
                     await healthKitManager.requestAuthorization()

@@ -3,11 +3,12 @@ import SwiftUI
 struct ActivityTab: View {
     @Environment(HealthKitManager.self) private var healthKitManager
     @State private var viewModel: ActivityViewModel?
+    @State private var isInitialLoading = true
 
     var body: some View {
         NavigationStack {
             Group {
-                if let vm = viewModel {
+                if let vm = viewModel, !isInitialLoading {
                     ActivityView(viewModel: vm)
                 } else {
                     ProgressView("加载中…")
@@ -15,7 +16,7 @@ struct ActivityTab: View {
             }
             .navigationTitle("活动")
             .toolbar {
-                if let vm = viewModel {
+                if let vm = viewModel, !isInitialLoading {
                     ToolbarItem(placement: .topBarTrailing) {
                         Button {
                             Task { await vm.refresh() }
@@ -32,6 +33,7 @@ struct ActivityTab: View {
         }
         .onAppear {
             viewModel = ActivityViewModel(healthKitManager: healthKitManager)
+            isInitialLoading = false
         }
     }
 }

@@ -10,6 +10,12 @@ final class DashboardViewModel {
     private(set) var stressLevelText: String = "暂无数据"
     private(set) var lastStressUpdated: Date?
 
+    // Watch diagnostics
+    private(set) var watchHKAuthorized: Bool?
+    private(set) var watchMonitoring: Bool?
+    private(set) var watchErrorText: String?
+    private(set) var watchLastReport: Date?
+
     // Heart
     private(set) var currentHeartRate: Double?
     private(set) var latestHRV: Double?
@@ -47,6 +53,12 @@ final class DashboardViewModel {
         latestRMSSD = healthKitManager.latestRMSSD
         stressLevelText = stressLevelDisplayName(healthKitManager.stressLevel)
         lastStressUpdated = healthKitManager.lastStressUpdated
+
+        // Watch diagnostics
+        watchHKAuthorized = healthKitManager.watchStatus.healthKitAuthorized
+        watchMonitoring = healthKitManager.watchStatus.stressMonitoring
+        watchErrorText = healthKitManager.watchStatus.errorText
+        watchLastReport = healthKitManager.watchStatus.lastReportTime
 
         // Heart
         if let hrSamples = healthKitManager.allSamples[.heartRate], let first = hrSamples.first {

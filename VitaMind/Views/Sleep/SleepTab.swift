@@ -3,11 +3,12 @@ import SwiftUI
 struct SleepTab: View {
     @Environment(HealthKitManager.self) private var healthKitManager
     @State private var viewModel: SleepViewModel?
+    @State private var isInitialLoading = true
 
     var body: some View {
         NavigationStack {
             Group {
-                if let vm = viewModel {
+                if let vm = viewModel, !isInitialLoading {
                     SleepView(viewModel: vm)
                 } else {
                     ProgressView("加载中…")
@@ -15,7 +16,7 @@ struct SleepTab: View {
             }
             .navigationTitle("睡眠")
             .toolbar {
-                if let vm = viewModel {
+                if let vm = viewModel, !isInitialLoading {
                     ToolbarItem(placement: .topBarTrailing) {
                         Button {
                             Task { await vm.refresh() }
@@ -32,6 +33,7 @@ struct SleepTab: View {
         }
         .onAppear {
             viewModel = SleepViewModel(healthKitManager: healthKitManager)
+            isInitialLoading = false
         }
     }
 }

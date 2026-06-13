@@ -21,6 +21,15 @@ final class HealthKitManager {
     private(set) var stressLevel: String = "unknown"
     private(set) var lastStressUpdated: Date?
 
+    /// Diagnostics reported from the watch.
+    struct WatchStatus {
+        var healthKitAuthorized: Bool = false
+        var stressMonitoring: Bool = false
+        var errorText: String?
+        var lastReportTime: Date?
+    }
+    private(set) var watchStatus = WatchStatus()
+
     // MARK: - Backward-compat computed properties
 
     var latestHeartRate: Double? { latestValues[.heartRate] }
@@ -86,6 +95,14 @@ final class HealthKitManager {
         latestRMSSD = rmssd
         stressLevel = level
         lastStressUpdated = timestamp
+    }
+
+    /// Update the watch-side diagnostic status.
+    func updateWatchStatus(hkAuthorized: Bool, monitoring: Bool, errorText: String?, timestamp: Date) {
+        watchStatus.healthKitAuthorized = hkAuthorized
+        watchStatus.stressMonitoring = monitoring
+        watchStatus.errorText = errorText
+        watchStatus.lastReportTime = timestamp
     }
 
     // MARK: - Authorization
