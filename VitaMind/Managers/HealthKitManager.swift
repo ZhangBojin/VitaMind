@@ -14,6 +14,13 @@ final class HealthKitManager {
     private(set) var latestValues: [HealthMetricType: Double] = [:]
     private(set) var error: String?
 
+    // MARK: - Stress (computed on watch, received via WatchConnectivity)
+
+    private(set) var latestStressScore: Int?
+    private(set) var latestRMSSD: Double?
+    private(set) var stressLevel: String = "unknown"
+    private(set) var lastStressUpdated: Date?
+
     // MARK: - Backward-compat computed properties
 
     var latestHeartRate: Double? { latestValues[.heartRate] }
@@ -71,6 +78,14 @@ final class HealthKitManager {
         allSamples[sample.type] = existing
         latestValues[sample.type] = existing.first?.value
         cache.saveAll(allSamples)
+    }
+
+    /// Ingest a stress result received from the watch.
+    func ingestStressResult(score: Int, rmssd: Double, level: String, timestamp: Date) {
+        latestStressScore = score
+        latestRMSSD = rmssd
+        stressLevel = level
+        lastStressUpdated = timestamp
     }
 
     // MARK: - Authorization

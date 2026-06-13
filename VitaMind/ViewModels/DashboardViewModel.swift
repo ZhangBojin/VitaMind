@@ -4,6 +4,12 @@ import Observation
 @MainActor
 @Observable
 final class DashboardViewModel {
+    // Stress
+    private(set) var stressScore: Int?
+    private(set) var latestRMSSD: Double?
+    private(set) var stressLevelText: String = "暂无数据"
+    private(set) var lastStressUpdated: Date?
+
     // Heart
     private(set) var currentHeartRate: Double?
     private(set) var latestHRV: Double?
@@ -35,6 +41,12 @@ final class DashboardViewModel {
     /// Recompute stats from the HealthKit manager's samples.
     func updateStats() {
         error = healthKitManager.error
+
+        // Stress
+        stressScore = healthKitManager.latestStressScore
+        latestRMSSD = healthKitManager.latestRMSSD
+        stressLevelText = stressLevelDisplayName(healthKitManager.stressLevel)
+        lastStressUpdated = healthKitManager.lastStressUpdated
 
         // Heart
         if let hrSamples = healthKitManager.allSamples[.heartRate], let first = hrSamples.first {
@@ -92,6 +104,16 @@ final class DashboardViewModel {
         let todaySamples = samples.filter { $0.date >= start }
         // Exercise minutes from HealthKit are cumulative; take the max value
         return Int(todaySamples.map(\.value).max() ?? 0)
+    }
+
+    private func stressLevelDisplayName(_ level: String) -> String {
+        switch level {
+        case "relaxed": return "放松"
+        case "normal":  return "正常"
+        case "alert":   return "注意"
+        case "tense":   return "紧张"
+        default:        return "暂无数据"
+        }
     }
 
     private func countTodayStandHours(since start: Date) -> Int {

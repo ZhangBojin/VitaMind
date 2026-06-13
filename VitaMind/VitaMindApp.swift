@@ -22,6 +22,15 @@ struct VitaMindApp: App {
                     watchConnectivityManager.onSampleReceived = { sample in
                         healthKitManager.ingestSingleSample(sample)
                     }
+                    // Wire stress results from watch.
+                    watchConnectivityManager.onStressResultReceived = { result in
+                        healthKitManager.ingestStressResult(
+                            score: result.score,
+                            rmssd: result.rmssd,
+                            level: result.level,
+                            timestamp: result.timestamp
+                        )
+                    }
 
                     // Request HealthKit access and begin observing all types.
                     await healthKitManager.requestAuthorization()

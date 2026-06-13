@@ -16,7 +16,7 @@ struct DashboardOverviewView: View {
         } else {
             ScrollView {
                 VStack(spacing: 20) {
-                    heartRateCard
+                    stressCard
                     activitySummaryRow
                     vitalsSummaryRow
                     sleepSummaryCard
@@ -30,38 +30,67 @@ struct DashboardOverviewView: View {
         }
     }
 
-    // MARK: - 心率卡片
+    // MARK: - 压力卡片
 
-    private var heartRateCard: some View {
-        VStack(spacing: 8) {
-            Text("心率")
+    private var stressCard: some View {
+        let color = stressColor
+
+        return VStack(spacing: 8) {
+            Text("当前压力")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
-            if let bpm = viewModel.currentHeartRate {
+            if let score = viewModel.stressScore {
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text("\(Int(bpm))")
+                    Text("\(score)")
                         .font(.system(size: 72, weight: .thin, design: .rounded))
-                    Text("次/分")
+                        .foregroundStyle(color)
+                    Text("分")
                         .font(.title3)
                         .foregroundStyle(.secondary)
                 }
-                Image(systemName: "heart.fill")
-                    .font(.title)
-                    .foregroundStyle(.red)
-                    .symbolEffect(.pulse, options: .repeating)
+
+                Text(viewModel.stressLevelText)
+                    .font(.title3.bold())
+                    .foregroundStyle(color)
+
+                // RMSSD detail
+                if let rmssd = viewModel.latestRMSSD {
+                    Text("RMSSD: \(Int(rmssd)) ms")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                if let updated = viewModel.lastStressUpdated {
+                    Text("更新于 \(updated, style: .time)")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
             } else {
                 Text("--")
                     .font(.system(size: 72, weight: .thin, design: .rounded))
                     .foregroundStyle(.tertiary)
-                Text("暂无心率数据")
+                Text("暂无压力数据")
                     .font(.caption)
+                    .foregroundStyle(.secondary)
+                Text("请佩戴 Apple Watch 以监测压力")
+                    .font(.caption2)
                     .foregroundStyle(.secondary)
             }
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 32)
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20))
+    }
+
+    private var stressColor: Color {
+        guard let score = viewModel.stressScore else { return .secondary }
+        switch score {
+        case 0...25:  return .green
+        case 26...50: return .blue
+        case 51...75: return .orange
+        default:      return .red
+        }
     }
 
     // MARK: - 活动概览

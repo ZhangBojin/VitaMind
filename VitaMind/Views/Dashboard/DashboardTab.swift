@@ -30,6 +30,9 @@ struct DashboardTab: View {
         .onChange(of: healthKitManager.allSamples) { _, _ in
             viewModel?.updateStats()
         }
+        .onChange(of: healthKitManager.lastStressUpdated) { _, _ in
+            viewModel?.updateStats()
+        }
         .onAppear {
             viewModel = DashboardViewModel(healthKitManager: healthKitManager)
             Task { await viewModel?.refresh() }

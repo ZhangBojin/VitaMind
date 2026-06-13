@@ -12,6 +12,16 @@ final class WatchConnectivityManager: NSObject {
 
     /// Callback invoked when health data arrives from the watch.
     var onSampleReceived: ((HealthSample) -> Void)?
+    /// Callback invoked when a stress result arrives from the watch.
+    var onStressResultReceived: ((StressResult) -> Void)?
+
+    /// Stress result received from the watch.
+    struct StressResult {
+        let score: Int
+        let rmssd: Double
+        let level: String
+        let timestamp: Date
+    }
 
     private var sessionDelegate: SessionDelegate?
 
@@ -27,8 +37,24 @@ final class WatchConnectivityManager: NSObject {
 
     /// Process an incoming health sample message from the watch.
     fileprivate func handleIncoming(_ message: [String: Any]) {
-        // Parse the metric type (default to heartRate for backward compat with old watch)
+        // Check if it's a stress result
         let typeRaw = message["type"] as? String ?? "heartRate"
+        if typeRaw == "stressResult" {
+            guard let score = message["score"] as? Int,
+                  let rmssd = message["rmssd"] as? Double,
+                  let level = message["level"] as? String else {
+                print("[iPhone WCS] Invalid stressResult message")
+                return
+            }
+            let timestamp: Date
+            if let ts = message["timestamp"] as? TimeInterval {
+                timestamp = Date(timeIntervalSince1970: ts)
+            } else {
+                timestamp = Date()
+            }
+            onStressResultReceived?(StressResult(score: score, rmssd: rmssd, level: level, timestamp: timestamp))
+            return
+        }
         guard let metricType = HealthMetricType(rawValue: typeRaw) else {
             print("[iPhone WCS] Unknown metric type: \(typeRaw)")
             return

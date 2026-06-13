@@ -12,6 +12,7 @@ struct VitaMind_Watch_AppApp: App {
     @Environment(\.scenePhase) private var scenePhase
     @State private var healthKitManager = WatchHealthKitManager()
     @State private var connectivityManager = WatchConnectivityManager()
+    @State private var stressMonitor = StressMonitor()
 
     var body: some Scene {
         WindowGroup {
@@ -24,16 +25,29 @@ struct VitaMind_Watch_AppApp: App {
                         connectivityManager.sendSample(sample)
                     }
 
-                    // Request authorization and start observing once.
+                    // Forward stress results to the phone.
+                    stressMonitor.onStressResult = { result in
+                        connectivityManager.sendStressResult(
+                            score: result.score,
+                            rmssd: result.rmssd,
+                            level: result.level.rawValue,
+                            timestamp: result.timestamp
+                        )
+                    }
+
+                    // Request authorization, then start health + stress monitoring.
                     await healthKitManager.requestAuthorization()
                     healthKitManager.startObservingAll()
+                    stressMonitor.start()
                 }
         }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .background {
                 healthKitManager.stopObserving()
+                stressMonitor.stop()
             } else if newPhase == .active {
                 healthKitManager.startObservingAll()
+                stressMonitor.start()
             }
         }
     }

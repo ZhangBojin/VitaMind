@@ -58,6 +58,24 @@ final class WatchConnectivityManager: NSObject {
         }
     }
 
+    /// Send a stress result to the iPhone.
+    func sendStressResult(score: Int, rmssd: Double, level: String, timestamp: Date) {
+        guard WCSession.isSupported() else { return }
+        let message: [String: Any] = [
+            "type": "stressResult",
+            "score": score,
+            "rmssd": rmssd,
+            "level": level,
+            "timestamp": timestamp.timeIntervalSince1970
+        ]
+        let session = WCSession.default
+        if session.isReachable {
+            session.sendMessage(message, replyHandler: nil, errorHandler: nil)
+        } else {
+            session.transferUserInfo(message)
+        }
+    }
+
     // MARK: - Internal (called by SessionDelegate)
 
     fileprivate func handleActivation(state: WCSessionActivationState, reachable: Bool, error: Error?) {
