@@ -43,10 +43,13 @@ struct VitaMind_Watch_AppApp: App {
         }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .background {
+                // Stop regular HealthKit observers, but keep the stress monitor
+                // running — HKWorkoutSession continues in background on watchOS.
                 healthKitManager.stopObserving()
-                stressMonitor.stop()
             } else if newPhase == .active {
                 healthKitManager.startObservingAll()
+                // stressMonitor.start() is safe to call multiple times —
+                // it skips if already running.
                 stressMonitor.start()
             }
         }

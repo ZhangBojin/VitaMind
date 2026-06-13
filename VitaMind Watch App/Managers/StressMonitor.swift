@@ -52,13 +52,17 @@ final class StressMonitor {
     // MARK: - Public API
 
     /// Start the periodic stress monitoring cycle.
-    /// Runs 5-min sampling sessions with rest intervals between them.
+    /// First runs a quick 30-second sample for an immediate score,
+    /// then proceeds with the full 5-min workout sessions.
     func start() {
         guard isAuthorized else {
             error = "HealthKit 未授权，无法启动压力监测。"
             return
         }
-        Task { await runSession() }
+        Task {
+            await runQuickSample()
+            await runSession()
+        }
     }
 
     /// Stop monitoring and end the current session if active.
@@ -72,6 +76,33 @@ final class StressMonitor {
 
     var isAuthorized: Bool {
         healthStore.authorizationStatus(for: heartRateType) == .sharingAuthorized
+    }
+
+    // MARK: - Quick Sample (30s, no workout needed)
+
+    /// Collect ~10 HR samples over 30 seconds without starting a workout session.
+    /// Delivers an immediate preliminary stress score so the UI isn't blank on launch.
+    private func runQuickSample() async {
+        isSampling = true
+        collectedHR.removeAll()
+        error = nil
+
+        // Collect for 30 seconds, 1 sample every 3 seconds = ~10 samples
+        let quickDuration: TimeInterval = 30
+        let interval: TimeInterval = 3.0
+        let start = Date()
+
+        while Date().timeIntervalSince(start) < quickDuration {
+            await collectLatestHR()
+            try? await Task.sleep(for: .seconds(interval))
+        }
+
+        isSampling = false
+
+        // Compute and deliver if we have enough data
+        if collectedHR.count >= 5 {
+            computeStress(from: collectedHR, timestamp: Date())
+        }
     }
 
     // MARK: - Session Lifecycle
@@ -186,8 +217,8 @@ final class StressMonitor {
     // MARK: - RMSSD & Stress Computation
 
     private func computeStress(from bpmValues: [Double], timestamp: Date) {
-        guard bpmValues.count >= 10 else {
-            error = "心率样本不足，需要至少 10 个采样点。"
+        guard bpmValues.count >= 5 else {
+            error = "心率样本不足，需要至少 5 个采样点。"
             return
         }
 

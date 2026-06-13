@@ -9,6 +9,9 @@ final class WatchConnectivityManager: NSObject {
     // Published state — fileprivate(set) so the delegate can update them.
     fileprivate(set) var isReachable = false
     fileprivate(set) var isActivated = false
+    /// Whether the watch app is installed on the paired Apple Watch.
+    /// Reliable indicator after WCSession is activated.
+    fileprivate(set) var isWatchAppInstalled = false
 
     /// Callback invoked when health data arrives from the watch.
     var onSampleReceived: ((HealthSample) -> Void)?
@@ -33,6 +36,12 @@ final class WatchConnectivityManager: NSObject {
         let session = WCSession.default
         session.delegate = delegate
         session.activate()
+        // Populate state immediately for already-activated sessions.
+        isActivated = session.activationState == .activated
+        isReachable = session.isReachable
+        #if os(iOS)
+        isWatchAppInstalled = session.isWatchAppInstalled
+        #endif
     }
 
     /// Process an incoming health sample message from the watch.
@@ -106,6 +115,9 @@ private final class SessionDelegate: NSObject, WCSessionDelegate {
         Task { @MainActor [weak self] in
             self?.owner?.isActivated = activationState == .activated
             self?.owner?.isReachable = session.isReachable
+            #if os(iOS)
+            self?.owner?.isWatchAppInstalled = WCSession.default.isWatchAppInstalled
+            #endif
             if let error {
                 print("[iPhone WCS] Activation error: \(error.localizedDescription)")
             }

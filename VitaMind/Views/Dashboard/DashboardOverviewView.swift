@@ -2,6 +2,7 @@ import SwiftUI
 
 struct DashboardOverviewView: View {
     @Environment(HealthKitManager.self) private var healthKitManager
+    @Environment(WatchConnectivityManager.self) private var watchConnectivity
     let viewModel: DashboardViewModel
 
     var body: some View {
@@ -70,12 +71,29 @@ struct DashboardOverviewView: View {
                 Text("--")
                     .font(.system(size: 72, weight: .thin, design: .rounded))
                     .foregroundStyle(.tertiary)
-                Text("暂无压力数据")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Text("请佩戴 Apple Watch 以监测压力")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+
+                if !watchConnectivity.isWatchAppInstalled {
+                    Text("手表 App 未安装")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text("请在 iPhone 的 Watch App 中安装 VitaMind")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                } else if !watchConnectivity.isActivated {
+                    Text("请打开手表 App")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text("打开一次手表上的 VitaMind 以开始监测")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text("正在采集…")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text("首次压力评估约需 30 秒")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
             }
         }
         .frame(maxWidth: .infinity)
