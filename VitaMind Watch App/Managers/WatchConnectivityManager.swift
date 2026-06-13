@@ -1,7 +1,7 @@
 import Foundation
 import WatchConnectivity
 
-/// Sends heart rate data from Watch to iPhone via WCSession.
+/// Sends health data from Watch to iPhone via WCSession.
 /// Uses a private delegate helper to avoid MainActor isolation conflicts with WCSessionDelegate.
 @MainActor
 @Observable
@@ -12,7 +12,7 @@ final class WatchConnectivityManager: NSObject {
     private(set) var isActivated = false
 
     /// Samples that failed to send (phone unreachable). Retried when reachable again.
-    private var pendingSamples: [HeartRateSample] = []
+    private var pendingSamples: [HealthSample] = []
     private let maxPending = 100
 
     private var sessionDelegate: SessionDelegate?
@@ -31,15 +31,11 @@ final class WatchConnectivityManager: NSObject {
 
     // MARK: - Send
 
-    /// Send a single heart rate sample to the companion iPhone app.
-    func sendHeartRate(_ sample: HeartRateSample) {
+    /// Send a single health sample to the companion iPhone app.
+    func sendSample(_ sample: HealthSample) {
         guard WCSession.isSupported() else { return }
 
-        let message: [String: Any] = [
-            "heartRate": sample.bpm,
-            "timestamp": sample.date.timeIntervalSince1970,
-            "source": sample.source
-        ]
+        let message = buildMessage(for: sample)
 
         let session = WCSession.default
 
@@ -52,6 +48,13 @@ final class WatchConnectivityManager: NSObject {
             }
         } else {
             session.transferUserInfo(message)
+        }
+    }
+
+    /// Send multiple samples to the iPhone.
+    func sendSamples(_ samples: [HealthSample]) {
+        for sample in samples {
+            sendSample(sample)
         }
     }
 
@@ -74,7 +77,21 @@ final class WatchConnectivityManager: NSObject {
 
     // MARK: - Private
 
-    private func enqueuePending(_ sample: HeartRateSample) {
+    private func buildMessage(for sample: HealthSample) -> [String: Any] {
+        var message: [String: Any] = [
+            "type": sample.type.rawValue,
+            "value": sample.value,
+            "unit": sample.unit,
+            "timestamp": sample.date.timeIntervalSince1970,
+            "source": sample.source
+        ]
+        if let metadata = sample.metadata {
+            message["metadata"] = metadata
+        }
+        return message
+    }
+
+    private func enqueuePending(_ sample: HealthSample) {
         pendingSamples.append(sample)
         if pendingSamples.count > maxPending {
             pendingSamples.removeFirst(pendingSamples.count - maxPending)
@@ -86,11 +103,7 @@ final class WatchConnectivityManager: NSObject {
         guard session.isReachable, !pendingSamples.isEmpty else { return }
 
         for sample in pendingSamples {
-            let message: [String: Any] = [
-                "heartRate": sample.bpm,
-                "timestamp": sample.date.timeIntervalSince1970,
-                "source": sample.source
-            ]
+            let message = buildMessage(for: sample)
             session.sendMessage(message, replyHandler: nil, errorHandler: nil)
         }
         pendingSamples.removeAll()
@@ -126,8 +139,6 @@ private final class SessionDelegate: NSObject, WCSessionDelegate {
         }
     }
 
-    // Required only when compiled for iOS simulator (embedded watch app).
-    // On watchOS, these are marked unavailable.
     #if os(iOS)
     func sessionDidBecomeInactive(_ session: WCSession) {}
     func sessionDidDeactivate(_ session: WCSession) { session.activate() }

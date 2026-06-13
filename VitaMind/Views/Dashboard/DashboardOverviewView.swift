@@ -1,0 +1,166 @@
+import SwiftUI
+
+struct DashboardOverviewView: View {
+    @Environment(HealthKitManager.self) private var healthKitManager
+    let viewModel: DashboardViewModel
+
+    var body: some View {
+        if !healthKitManager.isAuthorized {
+            HealthAuthorizationView()
+        } else if let error = viewModel.error {
+            EmptyStateView(
+                title: "出错了",
+                systemImage: "exclamationmark.triangle",
+                description: error
+            )
+        } else {
+            ScrollView {
+                VStack(spacing: 20) {
+                    heartRateCard
+                    activitySummaryRow
+                    vitalsSummaryRow
+                    sleepSummaryCard
+                    standProgressCard
+                }
+                .padding()
+            }
+            .refreshable {
+                await viewModel.refresh()
+            }
+        }
+    }
+
+    // MARK: - 心率卡片
+
+    private var heartRateCard: some View {
+        VStack(spacing: 8) {
+            Text("心率")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            if let bpm = viewModel.currentHeartRate {
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text("\(Int(bpm))")
+                        .font(.system(size: 72, weight: .thin, design: .rounded))
+                    Text("次/分")
+                        .font(.title3)
+                        .foregroundStyle(.secondary)
+                }
+                Image(systemName: "heart.fill")
+                    .font(.title)
+                    .foregroundStyle(.red)
+                    .symbolEffect(.pulse, options: .repeating)
+            } else {
+                Text("--")
+                    .font(.system(size: 72, weight: .thin, design: .rounded))
+                    .foregroundStyle(.tertiary)
+                Text("暂无心率数据")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 32)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20))
+    }
+
+    // MARK: - 活动概览
+
+    private var activitySummaryRow: some View {
+        HStack(spacing: 12) {
+            MetricCard(
+                title: "步数",
+                value: "\(viewModel.todaySteps)",
+                unit: "步",
+                systemImage: "shoeprints.fill",
+                color: .green
+            )
+            MetricCard(
+                title: "卡路里",
+                value: "\(Int(viewModel.todayCalories))",
+                unit: "千卡",
+                systemImage: "flame.fill",
+                color: .orange
+            )
+            MetricCard(
+                title: "锻炼",
+                value: "\(viewModel.todayExerciseMinutes)",
+                unit: "分钟",
+                systemImage: "figure.run",
+                color: .mint
+            )
+        }
+    }
+
+    // MARK: - 生命体征概览
+
+    private var vitalsSummaryRow: some View {
+        HStack(spacing: 12) {
+            StatCard(
+                title: "心率变异性",
+                value: viewModel.latestHRV.map { "\(Int($0))" } ?? "--",
+                unit: "毫秒",
+                color: .purple
+            )
+            StatCard(
+                title: "血氧",
+                value: viewModel.latestSpO2.map { "\(Int($0 * 100))%" } ?? "--",
+                unit: "%",
+                color: .red
+            )
+            StatCard(
+                title: "呼吸",
+                value: viewModel.latestRespiratoryRate.map { "\(Int($0))" } ?? "--",
+                unit: "次/分",
+                color: .cyan
+            )
+        }
+    }
+
+    // MARK: - 睡眠概览
+
+    private var sleepSummaryCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label("昨晚睡眠", systemImage: "moon.zzz.fill")
+                .font(.headline)
+                .foregroundStyle(.indigo)
+
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Text(String(format: "%.1f", viewModel.lastNightSleepHours))
+                    .font(.system(size: 36, weight: .thin, design: .rounded))
+                Text("小时")
+                    .font(.title3)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding()
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    // MARK: - 站立进度
+
+    private var standProgressCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label("站立小时", systemImage: "clock.arrow.circlepath")
+                .font(.headline)
+                .foregroundStyle(.teal)
+
+            HStack {
+                Text("\(viewModel.todayStandHours)/\(viewModel.standGoal)")
+                    .font(.title2.bold())
+                    .foregroundStyle(.teal)
+                Text("小时")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Spacer()
+            }
+
+            ProgressView(value: Double(viewModel.todayStandHours), total: Double(viewModel.standGoal))
+                .tint(.teal)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding()
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+    }
+}

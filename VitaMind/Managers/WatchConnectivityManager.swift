@@ -1,7 +1,7 @@
 import Foundation
 import WatchConnectivity
 
-/// Receives heart rate data from the Apple Watch via WCSession.
+/// Receives health data from the Apple Watch via WCSession.
 /// Uses an internal delegate helper to avoid MainActor isolation conflicts with WCSessionDelegate.
 @MainActor
 @Observable
@@ -10,8 +10,8 @@ final class WatchConnectivityManager: NSObject {
     fileprivate(set) var isReachable = false
     fileprivate(set) var isActivated = false
 
-    /// Callback invoked when heart rate data arrives from the watch.
-    var onHeartRateReceived: ((HeartRateSample) -> Void)?
+    /// Callback invoked when health data arrives from the watch.
+    var onSampleReceived: ((HealthSample) -> Void)?
 
     private var sessionDelegate: SessionDelegate?
 
@@ -25,10 +25,18 @@ final class WatchConnectivityManager: NSObject {
         session.activate()
     }
 
-    /// Process an incoming heart rate message from the watch.
+    /// Process an incoming health sample message from the watch.
     fileprivate func handleIncoming(_ message: [String: Any]) {
-        guard let bpm = message["heartRate"] as? Double else {
-            print("[iPhone WCS] Missing heartRate in message")
+        // Parse the metric type (default to heartRate for backward compat with old watch)
+        let typeRaw = message["type"] as? String ?? "heartRate"
+        guard let metricType = HealthMetricType(rawValue: typeRaw) else {
+            print("[iPhone WCS] Unknown metric type: \(typeRaw)")
+            return
+        }
+
+        // Parse value — try "value" key first, fall back to "heartRate" for backward compat
+        guard let value = message["value"] as? Double ?? message["heartRate"] as? Double else {
+            print("[iPhone WCS] Missing value in message")
             return
         }
 
@@ -40,9 +48,18 @@ final class WatchConnectivityManager: NSObject {
         }
 
         let source = message["source"] as? String ?? "watch"
+        let unit = message["unit"] as? String
+        let metadata = message["metadata"] as? [String: String]
 
-        let sample = HeartRateSample(bpm: bpm, date: timestamp, source: source)
-        onHeartRateReceived?(sample)
+        let sample = HealthSample(
+            type: metricType,
+            value: value,
+            unit: unit,
+            date: timestamp,
+            source: source,
+            metadata: metadata
+        )
+        onSampleReceived?(sample)
     }
 }
 
@@ -75,7 +92,6 @@ private final class SessionDelegate: NSObject, WCSessionDelegate {
         }
     }
 
-    // These are unavailable on watchOS but required on iOS.
     #if os(iOS)
     func sessionDidBecomeInactive(_ session: WCSession) {
         session.activate()

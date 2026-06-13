@@ -9,7 +9,14 @@ import SwiftUI
 
 struct ContentView: View {
     var body: some View {
-        HeartRateView()
+        TabView {
+            HeartRateView()
+            HRVWatchView()
+            StepsWatchView()
+        }
+        #if os(watchOS)
+        .tabViewStyle(.verticalPage)
+        #endif
     }
 }
 

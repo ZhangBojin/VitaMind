@@ -18,9 +18,9 @@ struct VitaMind_Watch_AppApp: App {
                 .environment(healthKitManager)
                 .environment(connectivityManager)
                 .task {
-                    // Forward new heart rate samples from HealthKit to the phone.
-                    healthKitManager.onNewHeartRate = { sample in
-                        connectivityManager.sendHeartRate(sample)
+                    // Forward new health samples from HealthKit to the phone.
+                    healthKitManager.onNewSample = { sample in
+                        connectivityManager.sendSample(sample)
                     }
                 }
         }
