@@ -18,6 +18,20 @@
 			remoteGlobalIDString = DD31D5942FD53F0200228D98;
 			remoteInfo = "VitaMind Watch App";
 		};
+		DDECF8012FDD363300BAB011 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = DD31D5802FD53F0100228D98 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = DD31D5942FD53F0200228D98;
+			remoteInfo = "VitaMind Watch App";
+		};
+		DDECF8032FDD363B00BAB011 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = DD31D5802FD53F0100228D98 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = DD31D5942FD53F0200228D98;
+			remoteInfo = "VitaMind Watch App";
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -75,6 +89,7 @@
 			children = (
 				DD31D58A2FD53F0100228D98 /* VitaMind */,
 				DD31D5992FD53F0200228D98 /* VitaMind Watch App */,
+				DDECF8002FDD363300BAB011 /* Frameworks */,
 				DD31D5892FD53F0100228D98 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -86,6 +101,13 @@
 				DD31D5952FD53F0200228D98 /* VitaMind Watch App.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		DDECF8002FDD363300BAB011 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -104,6 +126,8 @@
 			);
 			dependencies = (
 				DD31D5982FD53F0200228D98 /* PBXTargetDependency */,
+				DDECF8022FDD363300BAB011 /* PBXTargetDependency */,
+				DDECF8042FDD363B00BAB011 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				DD31D58A2FD53F0100228D98 /* VitaMind */,
@@ -214,6 +238,16 @@
 			isa = PBXTargetDependency;
 			target = DD31D5942FD53F0200228D98 /* VitaMind Watch App */;
 			targetProxy = DD31D5972FD53F0200228D98 /* PBXContainerItemProxy */;
+		};
+		DDECF8022FDD363300BAB011 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = DD31D5942FD53F0200228D98 /* VitaMind Watch App */;
+			targetProxy = DDECF8012FDD363300BAB011 /* PBXContainerItemProxy */;
+		};
+		DDECF8042FDD363B00BAB011 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = DD31D5942FD53F0200228D98 /* VitaMind Watch App */;
+			targetProxy = DDECF8032FDD363B00BAB011 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -346,13 +380,13 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = VitaMind;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = zzz.VitaMind;
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.zzz.VitaMind;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = zzz.VitaMind.watchkitapp;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.zzz.VitaMind.watchkitapp-";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
@@ -379,13 +413,13 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = VitaMind;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = zzz.VitaMind;
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.zzz.VitaMind;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = zzz.VitaMind.watchkitapp;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.zzz.VitaMind.watchkitapp-";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
@@ -406,12 +440,16 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = VitaMind/VitaMind.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = DTZHWFPHT3;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = VitaMind;
+				INFOPLIST_KEY_NSHealthClinicalHealthRecordsShareUsageDescription = "我们需要读取您的数据来分析您的健康状况。1";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "我们需要读取您的数据来分析您的健康状况。";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "2我们需要读取您的数据来分析您的健康状况。";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -423,7 +461,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = zzz.VitaMind;
+				PRODUCT_BUNDLE_IDENTIFIER = com.zzz.VitaMind;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -441,12 +479,16 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = VitaMind/VitaMind.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = DTZHWFPHT3;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = VitaMind;
+				INFOPLIST_KEY_NSHealthClinicalHealthRecordsShareUsageDescription = "我们需要读取您的数据来分析您的健康状况。1";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "我们需要读取您的数据来分析您的健康状况。";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "2我们需要读取您的数据来分析您的健康状况。";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -458,7 +500,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = zzz.VitaMind;
+				PRODUCT_BUNDLE_IDENTIFIER = com.zzz.VitaMind;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
