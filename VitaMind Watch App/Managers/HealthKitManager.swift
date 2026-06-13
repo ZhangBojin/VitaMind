@@ -12,7 +12,10 @@ final class WatchHealthKitManager {
     private(set) var latestHRV: Double?
     private(set) var todaySteps: Double?
     private(set) var todayActiveEnergy: Double?
-    private(set) var lastUpdated: Date?
+    private(set) var lastUpdatedHeartRate: Date?
+    private(set) var lastUpdatedHRV: Date?
+    private(set) var lastUpdatedSteps: Date?
+    private(set) var lastUpdatedEnergy: Date?
     private(set) var error: String?
 
     /// Callback invoked each time a new health sample arrives.
@@ -60,8 +63,10 @@ final class WatchHealthKitManager {
     // MARK: - Observation
 
     /// Begin observing heart rate and HRV, plus periodic step/energy collection.
+    /// Safe to call multiple times — skips if already observing.
     func startObservingAll() {
         guard isAuthorized else { return }
+        guard heartRateObserver == nil else { return } // Already observing
 
         // Heart rate: immediate background delivery
         healthStore.enableBackgroundDelivery(for: heartRateType, frequency: .immediate) { _, error in
@@ -157,7 +162,7 @@ final class WatchHealthKitManager {
         )
 
         latestHeartRate = healthSample.value
-        lastUpdated = sample.startDate
+        lastUpdatedHeartRate = sample.startDate
         error = nil
         onNewSample?(healthSample)
     }
@@ -174,7 +179,7 @@ final class WatchHealthKitManager {
         )
 
         latestHRV = healthSample.value
-        lastUpdated = sample.startDate
+        lastUpdatedHRV = sample.startDate
         error = nil
         onNewSample?(healthSample)
     }
@@ -183,6 +188,7 @@ final class WatchHealthKitManager {
         let startOfDay = Calendar.current.startOfDay(for: Date())
         let total = await fetchSumQuantity(type: stepType, unit: HKUnit.count(), from: startOfDay, to: Date())
         todaySteps = total
+        lastUpdatedSteps = Date()
 
         if let steps = total {
             let healthSample = HealthSample(
@@ -199,6 +205,7 @@ final class WatchHealthKitManager {
         let startOfDay = Calendar.current.startOfDay(for: Date())
         let total = await fetchSumQuantity(type: activeEnergyType, unit: HKUnit.kilocalorie(), from: startOfDay, to: Date())
         todayActiveEnergy = total
+        lastUpdatedEnergy = Date()
 
         if let energy = total {
             let healthSample = HealthSample(

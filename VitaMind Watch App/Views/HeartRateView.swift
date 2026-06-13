@@ -27,7 +27,7 @@ struct HeartRateView: View {
             }
 
             // Last updated
-            if let lastUpdated = healthKitManager.lastUpdated {
+            if let lastUpdated = healthKitManager.lastUpdatedHeartRate {
                 Text("更新于 \(lastUpdated, style: .time)")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
@@ -47,15 +47,6 @@ struct HeartRateView: View {
             }
         }
         .padding()
-        .onAppear {
-            Task {
-                await healthKitManager.requestAuthorization()
-                healthKitManager.startObservingAll()
-            }
-        }
-        .onDisappear {
-            healthKitManager.stopObserving()
-        }
     }
 }
 

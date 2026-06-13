@@ -21,6 +21,12 @@ struct StepsWatchView: View {
                         .font(.caption2)
                         .foregroundStyle(.orange)
                 }
+
+                if let updated = healthKitManager.lastUpdatedSteps {
+                    Text("更新于 \(updated, style: .time)")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
             } else {
                 Text("--")
                     .font(.system(size: 56, weight: .thin, design: .rounded))
@@ -42,15 +48,6 @@ struct StepsWatchView: View {
                     .multilineTextAlignment(.center)
                     .padding(.horizontal)
             }
-        }
-        .onAppear {
-            Task {
-                await healthKitManager.requestAuthorization()
-                healthKitManager.startObservingAll()
-            }
-        }
-        .onDisappear {
-            healthKitManager.stopObserving()
         }
     }
 }

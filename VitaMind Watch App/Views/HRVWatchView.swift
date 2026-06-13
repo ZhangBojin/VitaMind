@@ -16,7 +16,7 @@ struct HRVWatchView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                if let updated = healthKitManager.lastUpdated {
+                if let updated = healthKitManager.lastUpdatedHRV {
                     Text("更新于 \(updated, style: .time)")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
@@ -42,15 +42,6 @@ struct HRVWatchView: View {
                     .multilineTextAlignment(.center)
                     .padding(.horizontal)
             }
-        }
-        .onAppear {
-            Task {
-                await healthKitManager.requestAuthorization()
-                healthKitManager.startObservingAll()
-            }
-        }
-        .onDisappear {
-            healthKitManager.stopObserving()
         }
     }
 }

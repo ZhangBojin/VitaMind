@@ -9,8 +9,9 @@ import SwiftUI
 
 @main
 struct VitaMind_Watch_AppApp: App {
-    private let healthKitManager = WatchHealthKitManager()
-    private let connectivityManager = WatchConnectivityManager()
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var healthKitManager = WatchHealthKitManager()
+    @State private var connectivityManager = WatchConnectivityManager()
 
     var body: some Scene {
         WindowGroup {
@@ -22,7 +23,18 @@ struct VitaMind_Watch_AppApp: App {
                     healthKitManager.onNewSample = { sample in
                         connectivityManager.sendSample(sample)
                     }
+
+                    // Request authorization and start observing once.
+                    await healthKitManager.requestAuthorization()
+                    healthKitManager.startObservingAll()
                 }
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .background {
+                healthKitManager.stopObserving()
+            } else if newPhase == .active {
+                healthKitManager.startObservingAll()
+            }
         }
     }
 }
