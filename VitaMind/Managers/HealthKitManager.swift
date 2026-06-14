@@ -105,6 +105,39 @@ final class HealthKitManager {
         watchStatus.lastReportTime = timestamp
     }
 
+    // MARK: - Cumulative Daily Totals (uses HKStatisticsQuery for deduplication)
+
+    /// Fetch the cumulative daily total for a quantity type (steps, active energy, etc.).
+    /// Uses HKStatisticsQuery which properly deduplicates across multiple data sources
+    /// (iPhone + Apple Watch), matching Health.app's numbers.
+    func fetchDailyCumulativeSum(for type: HealthMetricType) async -> Double? {
+        guard isAuthorized, let qid = type.hkQuantityTypeIdentifier,
+              let qt = HKQuantityType.quantityType(forIdentifier: qid) else { return nil }
+
+        let now = Date()
+        let startOfDay = Calendar.current.startOfDay(for: now)
+        let predicate = HKQuery.predicateForSamples(
+            withStart: startOfDay,
+            end: now,
+            options: .strictStartDate
+        )
+
+        return await withCheckedContinuation { continuation in
+            let query = HKStatisticsQuery(
+                quantityType: qt,
+                quantitySamplePredicate: predicate,
+                options: .cumulativeSum
+            ) { _, result, error in
+                guard let sum = result?.sumQuantity() else {
+                    continuation.resume(returning: nil)
+                    return
+                }
+                continuation.resume(returning: sum.doubleValue(for: type.hkUnit))
+            }
+            healthStore.execute(query)
+        }
+    }
+
     // MARK: - Authorization
 
     /// Request HealthKit authorization to read all supported health data types.

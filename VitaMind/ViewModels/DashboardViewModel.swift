@@ -68,11 +68,19 @@ final class DashboardViewModel {
             latestHRV = first.value
         }
 
-        // Activity — cumulative types: take latest value (not sum)
+        // Activity — use HKStatisticsQuery for accurate cumulative totals.
         let todayStart = Calendar.current.startOfDay(for: Date())
-        todaySteps = aggregateCumulative(type: .steps, since: todayStart)
-        todayCalories = aggregateCumulativeDouble(type: .activeEnergy, since: todayStart)
-        todayExerciseMinutes = aggregateCumulative(type: .exerciseMinutes, since: todayStart)
+        Task {
+            if let steps = await healthKitManager.fetchDailyCumulativeSum(for: .steps) {
+                todaySteps = Int(steps)
+            }
+            if let kcal = await healthKitManager.fetchDailyCumulativeSum(for: .activeEnergy) {
+                todayCalories = kcal
+            }
+            if let minutes = await healthKitManager.fetchDailyCumulativeSum(for: .exerciseMinutes) {
+                todayExerciseMinutes = Int(minutes)
+            }
+        }
         todayStandHours = countTodayStandHours(since: todayStart)
 
         // Sleep — sum last night's sleep
@@ -98,20 +106,6 @@ final class DashboardViewModel {
     }
 
     // MARK: - Private Helpers
-
-    /// For cumulative types (steps, active energy, exercise minutes):
-    /// each sample value is a running total from midnight, so take the latest (max) value.
-    private func aggregateCumulative(type: HealthMetricType, since start: Date) -> Int {
-        guard let samples = healthKitManager.allSamples[type] else { return 0 }
-        let todaySamples = samples.filter { $0.date >= start }
-        return Int(todaySamples.map(\.value).max() ?? 0)
-    }
-
-    private func aggregateCumulativeDouble(type: HealthMetricType, since start: Date) -> Double {
-        guard let samples = healthKitManager.allSamples[type] else { return 0 }
-        let todaySamples = samples.filter { $0.date >= start }
-        return todaySamples.map(\.value).max() ?? 0
-    }
 
     private func stressLevelDisplayName(_ level: String) -> String {
         switch level {

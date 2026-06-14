@@ -29,10 +29,12 @@ final class ActivityViewModel {
 
         let todayStart = Calendar.current.startOfDay(for: Date())
 
-        // Cumulative types: take max (latest running total), not sum.
-        todaySteps = aggregateCumulative(type: .steps, since: todayStart)
-        activeCalories = aggregateCumulativeDouble(type: .activeEnergy, since: todayStart)
-        exerciseMinutes = aggregateCumulative(type: .exerciseMinutes, since: todayStart)
+        // Use HKStatisticsQuery for accurate cumulative totals matching Health.app.
+        Task {
+            if let s = await healthKitManager.fetchDailyCumulativeSum(for: .steps) { todaySteps = Int(s) }
+            if let c = await healthKitManager.fetchDailyCumulativeSum(for: .activeEnergy) { activeCalories = c }
+            if let m = await healthKitManager.fetchDailyCumulativeSum(for: .exerciseMinutes) { exerciseMinutes = Int(m) }
+        }
 
         // Stand hours: count hours where stand was achieved
         if let samples = healthKitManager.allSamples[.standHours] {
@@ -53,17 +55,6 @@ final class ActivityViewModel {
     }
 
     // MARK: - Private
-
-    /// Cumulative types: each sample is a running total from midnight — take max.
-    private func aggregateCumulative(type: HealthMetricType, since start: Date) -> Int {
-        guard let samples = healthKitManager.allSamples[type] else { return 0 }
-        return Int(samples.filter { $0.date >= start }.map(\.value).max() ?? 0)
-    }
-
-    private func aggregateCumulativeDouble(type: HealthMetricType, since start: Date) -> Double {
-        guard let samples = healthKitManager.allSamples[type] else { return 0 }
-        return samples.filter { $0.date >= start }.map(\.value).max() ?? 0
-    }
 
     private func computeStepHistory(days: Int) -> [(label: String, steps: Int)] {
         guard let samples = healthKitManager.allSamples[.steps] else { return [] }

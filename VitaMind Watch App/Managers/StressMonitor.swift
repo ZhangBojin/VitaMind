@@ -197,7 +197,7 @@ final class StressMonitor {
         else { return }
 
         let sdnn = latest.quantity.doubleValue(for: HKUnit(from: "ms"))
-        computeStress(from: sdnn, timestamp: latest.startDate)
+        computeStress(from: sdnn, timestamp: latest.endDate)
     }
 
     // MARK: - Stress Computation (from SDNN)
