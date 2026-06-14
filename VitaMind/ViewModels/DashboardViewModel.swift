@@ -68,11 +68,11 @@ final class DashboardViewModel {
             latestHRV = first.value
         }
 
-        // Activity — aggregate today's values
+        // Activity — cumulative types: take latest value (not sum)
         let todayStart = Calendar.current.startOfDay(for: Date())
-        todaySteps = aggregateToday(type: .steps, since: todayStart)
-        todayCalories = aggregateTodayDouble(type: .activeEnergy, since: todayStart)
-        todayExerciseMinutes = aggregateTodayMinutes(type: .exerciseMinutes, since: todayStart)
+        todaySteps = aggregateCumulative(type: .steps, since: todayStart)
+        todayCalories = aggregateCumulativeDouble(type: .activeEnergy, since: todayStart)
+        todayExerciseMinutes = aggregateCumulative(type: .exerciseMinutes, since: todayStart)
         todayStandHours = countTodayStandHours(since: todayStart)
 
         // Sleep — sum last night's sleep
@@ -99,23 +99,18 @@ final class DashboardViewModel {
 
     // MARK: - Private Helpers
 
-    private func aggregateToday(type: HealthMetricType, since start: Date) -> Int {
+    /// For cumulative types (steps, active energy, exercise minutes):
+    /// each sample value is a running total from midnight, so take the latest (max) value.
+    private func aggregateCumulative(type: HealthMetricType, since start: Date) -> Int {
         guard let samples = healthKitManager.allSamples[type] else { return 0 }
         let todaySamples = samples.filter { $0.date >= start }
-        return Int(todaySamples.reduce(0) { $0 + $1.value })
-    }
-
-    private func aggregateTodayDouble(type: HealthMetricType, since start: Date) -> Double {
-        guard let samples = healthKitManager.allSamples[type] else { return 0 }
-        let todaySamples = samples.filter { $0.date >= start }
-        return todaySamples.reduce(0) { $0 + $1.value }
-    }
-
-    private func aggregateTodayMinutes(type: HealthMetricType, since start: Date) -> Int {
-        guard let samples = healthKitManager.allSamples[type] else { return 0 }
-        let todaySamples = samples.filter { $0.date >= start }
-        // Exercise minutes from HealthKit are cumulative; take the max value
         return Int(todaySamples.map(\.value).max() ?? 0)
+    }
+
+    private func aggregateCumulativeDouble(type: HealthMetricType, since start: Date) -> Double {
+        guard let samples = healthKitManager.allSamples[type] else { return 0 }
+        let todaySamples = samples.filter { $0.date >= start }
+        return todaySamples.map(\.value).max() ?? 0
     }
 
     private func stressLevelDisplayName(_ level: String) -> String {

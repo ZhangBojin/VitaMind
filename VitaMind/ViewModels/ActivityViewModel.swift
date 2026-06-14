@@ -29,15 +29,10 @@ final class ActivityViewModel {
 
         let todayStart = Calendar.current.startOfDay(for: Date())
 
-        // Today's aggregates from cumulative quantities
-        todaySteps = aggregateToday(type: .steps, since: todayStart)
-        activeCalories = aggregateTodayCalories(since: todayStart)
-
-        // Exercise minutes: cumulative type, take max value
-        if let samples = healthKitManager.allSamples[.exerciseMinutes] {
-            let todaySamples = samples.filter { $0.date >= todayStart }
-            exerciseMinutes = Int(todaySamples.map(\.value).max() ?? 0)
-        }
+        // Cumulative types: take max (latest running total), not sum.
+        todaySteps = aggregateCumulative(type: .steps, since: todayStart)
+        activeCalories = aggregateCumulativeDouble(type: .activeEnergy, since: todayStart)
+        exerciseMinutes = aggregateCumulative(type: .exerciseMinutes, since: todayStart)
 
         // Stand hours: count hours where stand was achieved
         if let samples = healthKitManager.allSamples[.standHours] {
@@ -59,23 +54,22 @@ final class ActivityViewModel {
 
     // MARK: - Private
 
-    private func aggregateToday(type: HealthMetricType, since start: Date) -> Int {
+    /// Cumulative types: each sample is a running total from midnight — take max.
+    private func aggregateCumulative(type: HealthMetricType, since start: Date) -> Int {
         guard let samples = healthKitManager.allSamples[type] else { return 0 }
-        let todaySamples = samples.filter { $0.date >= start }
-        return Int(todaySamples.reduce(0) { $0 + $1.value })
+        return Int(samples.filter { $0.date >= start }.map(\.value).max() ?? 0)
     }
 
-    private func aggregateTodayCalories(since start: Date) -> Double {
-        guard let samples = healthKitManager.allSamples[.activeEnergy] else { return 0 }
-        let todaySamples = samples.filter { $0.date >= start }
-        return todaySamples.reduce(0) { $0 + $1.value }
+    private func aggregateCumulativeDouble(type: HealthMetricType, since start: Date) -> Double {
+        guard let samples = healthKitManager.allSamples[type] else { return 0 }
+        return samples.filter { $0.date >= start }.map(\.value).max() ?? 0
     }
 
     private func computeStepHistory(days: Int) -> [(label: String, steps: Int)] {
         guard let samples = healthKitManager.allSamples[.steps] else { return [] }
         let calendar = Calendar.current
         let formatter = DateFormatter()
-        formatter.dateFormat = "E" // Mon, Tue, etc.
+        formatter.dateFormat = "E"
         var history: [(label: String, steps: Int)] = []
 
         for dayOffset in (0..<days).reversed() {
@@ -84,9 +78,10 @@ final class ActivityViewModel {
             }
             let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart) ?? dayStart
             let daySamples = samples.filter { $0.date >= dayStart && $0.date < dayEnd }
-            let totalSteps = Int(daySamples.reduce(0) { $0 + $1.value })
+            // Cumulative type: latest value = total for the day.
+            let daySteps = Int(daySamples.map(\.value).max() ?? 0)
             let label = formatter.string(from: dayStart)
-            history.append((label: label, steps: totalSteps))
+            history.append((label: label, steps: daySteps))
         }
 
         return history

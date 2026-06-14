@@ -15,18 +15,6 @@ struct SleepTab: View {
                 }
             }
             .navigationTitle("睡眠")
-            .toolbar {
-                if let vm = viewModel, !isInitialLoading {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button {
-                            Task { await vm.refresh() }
-                        } label: {
-                            Image(systemName: "arrow.clockwise")
-                        }
-                        .disabled(vm.isLoading)
-                    }
-                }
-            }
         }
         .onChange(of: healthKitManager.allSamples) { _, _ in
             viewModel?.updateStats()

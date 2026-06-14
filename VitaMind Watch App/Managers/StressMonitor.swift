@@ -166,15 +166,20 @@ final class StressMonitor {
             options: .strictStartDate
         )
 
+        let sortDescriptor = NSSortDescriptor(
+            key: HKSampleSortIdentifierStartDate,
+            ascending: false
+        )
+
         let samples: [HKSample]
         do {
             samples = try await withCheckedThrowingContinuation { continuation in
-                let query = HKAnchoredObjectQuery(
-                    type: hrvType,
+                let query = HKSampleQuery(
+                    sampleType: hrvType,
                     predicate: predicate,
-                    anchor: nil,
-                    limit: 1 // just the latest
-                ) { _, results, _, _, error in
+                    limit: 1,
+                    sortDescriptors: [sortDescriptor]
+                ) { _, results, error in
                     if let error {
                         continuation.resume(throwing: error)
                     } else {
@@ -188,10 +193,7 @@ final class StressMonitor {
             return
         }
 
-        guard let latest = samples
-            .compactMap({ $0 as? HKQuantitySample })
-            .sorted(by: { $0.startDate > $1.startDate })
-            .first
+        guard let latest = samples.first as? HKQuantitySample
         else { return }
 
         let sdnn = latest.quantity.doubleValue(for: HKUnit(from: "ms"))
