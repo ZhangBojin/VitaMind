@@ -20,6 +20,7 @@ struct DashboardOverviewView: View {
                 ScrollView {
                     VStack(spacing: 20) {
                         stressCard
+                        watchFaceCard
                         activitySummaryRow
                         vitalsSummaryRow
                         sleepSummaryCard
@@ -154,6 +155,54 @@ struct DashboardOverviewView: View {
         .frame(maxWidth: .infinity)
         .padding(.vertical, 32)
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20))
+    }
+
+    // MARK: - 表盘
+
+    private var watchFaceCard: some View {
+        VStack(spacing: 12) {
+            HStack(spacing: 16) {
+                // Preview
+                ZStack {
+                    Circle()
+                        .fill(.black)
+                        .frame(width: 60, height: 60)
+                    if let score = viewModel.stressScore {
+                        Text("\(score)")
+                            .font(.system(size: 20, weight: .bold, design: .rounded))
+                            .foregroundStyle(stressColor)
+                    } else {
+                        Text("--")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .overlay(Circle().stroke(stressColor, lineWidth: 2))
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("添加到 Apple Watch 表盘")
+                        .font(.subheadline.bold())
+                    Text("长按手表表盘 → 编辑 → 滑动到\n小组件位置 → 选择 VitaMind")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+            }
+
+            Button {
+                if let url = URL(string: "itms-watchs://") {
+                    UIApplication.shared.open(url)
+                }
+            } label: {
+                Label("打开 Watch App 设置", systemImage: "applewatch")
+                    .font(.subheadline)
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .tint(.indigo)
+        }
+        .padding()
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
     }
 
     private var stressColor: Color {

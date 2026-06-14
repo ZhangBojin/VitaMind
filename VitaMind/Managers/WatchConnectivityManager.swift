@@ -32,6 +32,7 @@ final class WatchConnectivityManager: NSObject {
         )
     }
 
+
     /// Stress result received from the watch.
     struct StressResult {
         let score: Int

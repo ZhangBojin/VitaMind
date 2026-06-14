@@ -223,6 +223,20 @@ final class StressMonitor {
         lastUpdated = timestamp
         error = nil
 
+        // Sync to complication data store for watch face display.
+        StressDataStore.shared.latestScore = score
+        StressDataStore.shared.latestLevel = stressLevelText(level)
+
         onStressResult?(StressResult(score: score, sdnn: sdnn, level: level, timestamp: timestamp))
+    }
+
+    private func stressLevelText(_ level: StressLevel) -> String {
+        switch level {
+        case .relaxed: return "放松"
+        case .normal:  return "正常"
+        case .alert:   return "注意"
+        case .tense:   return "紧张"
+        case .unknown: return "暂无数据"
+        }
     }
 }

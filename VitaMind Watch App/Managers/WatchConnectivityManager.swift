@@ -13,7 +13,6 @@ final class WatchConnectivityManager: NSObject {
 
     /// Callback when iPhone requests a stress measurement.
     var onStartMeasurement: (() -> Void)?
-
     /// Samples that failed to send (phone unreachable). Retried when reachable again.
     private var pendingSamples: [HealthSample] = []
     private let maxPending = 100
